@@ -210,14 +210,6 @@ export default function AuthPage() {
                       </>
                     )}
                   </Button>
-
-                  <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                    <p className="text-sm text-gray-600 mb-2">บัญชีทดสอบ:</p>
-                    <div className="text-xs text-gray-500 space-y-1">
-                      <div>Admin: admin / admin123</div>
-                      <div>User: user / user123</div>
-                    </div>
-                  </div>
                 </form>
               </TabsContent>
 
