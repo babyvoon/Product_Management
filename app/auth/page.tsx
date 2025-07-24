@@ -33,7 +33,7 @@ export default function AuthPage() {
     email: "", // เพิ่ม email
     password: "",
     confirmPassword: "",
-    role: "user" as "admin" | "user",
+    role: "user" as "user",
   })
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -109,7 +109,7 @@ export default function AuthPage() {
           username: registerForm.username,
           email: registerForm.email,
           password: registerForm.password,
-          role: registerForm.role,
+          role: "user",
         },
       ])
       .select()
@@ -268,24 +268,6 @@ export default function AuthPage() {
                         required
                       />
                     </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="register-role" className="text-black">
-                      ประเภทผู้ใช้
-                    </Label>
-                    <Select
-                      value={registerForm.role}
-                      onValueChange={(value: "admin" | "user") => setRegisterForm({ ...registerForm, role: value })}
-                    >
-                      <SelectTrigger className="border-gray-300 focus:border-black focus:ring-black">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-card border-gray-300">
-                        <SelectItem value="user">ผู้ใช้ทั่วไป</SelectItem>
-                        <SelectItem value="admin">ผู้ดูแลระบบ</SelectItem>
-                      </SelectContent>
-                    </Select>
                   </div>
 
                   <div className="space-y-2">
