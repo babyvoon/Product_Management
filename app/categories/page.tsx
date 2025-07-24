@@ -198,7 +198,19 @@ export default function CategoryPage({ userData, onNavigateToProducts, onNavigat
       .select("name")
       .eq("id", categoryId)
       .maybeSingle();
-    await supabase.from("products").delete().eq("category_id", categoryId);
+    // เช็คว่ามีสินค้าในหมวดหมู่นี้หรือไม่
+    const { count: productCount, error: countError } = await supabase
+      .from("products")
+      .select("id", { count: 'exact', head: true })
+      .eq("category_id", categoryId);
+    if (countError) {
+      alert("เกิดข้อผิดพลาดในการตรวจสอบสินค้า: " + countError.message);
+      return;
+    }
+    if (productCount && productCount > 0) {
+      alert("ไม่สามารถลบหมวดหมู่นี้ได้ เนื่องจากยังมีสินค้าอยู่ในหมวดหมู่นี้ กรุณาลบสินค้าทั้งหมดก่อน");
+      return;
+    }
     const { error } = await supabase.from("categories").delete().eq("id", categoryId);
     if (!error) {
       // === บันทึก log ===
