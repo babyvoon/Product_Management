@@ -139,6 +139,17 @@ export default function ProductsPage({ userData, category, onNavigateBack }: Pro
 
   const handleAddProduct = async () => {
     try {
+      // ตรวจสอบชื่อสินค้าซ้ำในหมวดหมู่เดียวกัน
+      const { data: existing, error: checkError } = await supabase
+        .from("products")
+        .select("id")
+        .ilike("name", newProduct.name)
+        .eq("category_id", category?.id)
+        .maybeSingle();
+      if (existing) {
+        alert("มีชื่อสินค้านี้อยู่แล้วในหมวดหมู่นี้ กรุณาตั้งชื่อใหม่");
+        return;
+      }
       const { data: inserted, error } = await supabase
         .from("products")
         .insert([
@@ -159,6 +170,16 @@ export default function ProductsPage({ userData, category, onNavigateBack }: Pro
 
       if (error) throw error;
 
+      // === บันทึก log ===
+      await supabase.from('logs').insert([
+        {
+          username: userData.username,
+          action: 'เพิ่มสินค้า',
+          target_type: 'product',
+          target_name: newProduct.name,
+          detail: JSON.stringify(newProduct),
+        }
+      ]);
       // fetch ข้อมูลใหม่หลัง insert
       await fetchProducts();
 
@@ -194,6 +215,16 @@ export default function ProductsPage({ userData, category, onNavigateBack }: Pro
           })
           .eq("id", editingProduct.id);
         if (error) throw error;
+        // === บันทึก log ===
+        await supabase.from('logs').insert([
+          {
+            username: userData.username,
+            action: 'แก้ไขสินค้า',
+            target_type: 'product',
+            target_name: editingProduct.name,
+            detail: JSON.stringify(editingProduct),
+          }
+        ]);
         await fetchProducts(); // ดึงข้อมูลใหม่หลัง update
         setEditingProduct(null);
         setEditImagePreview("");
@@ -236,19 +267,46 @@ export default function ProductsPage({ userData, category, onNavigateBack }: Pro
   }
 
   // เพิ่มฟังก์ชันลบสินค้า
-  const handleDeleteProduct = async (productId: number) => {
+  const handleDeleteProduct = async (productId: number | string) => {
     if (!window.confirm("คุณต้องการลบสินค้านี้หรือไม่?")) return;
     try {
+      // หา product ที่จะลบเพื่อบันทึก log
+      const { data: productToDelete } = await supabase
+        .from("products")
+        .select("name")
+        .eq("id", productId)
+        .maybeSingle();
+      // ลบ orders ที่อ้างถึงสินค้านี้ก่อน
+      console.log("จะลบ order ที่ product_id =", productId);
+      const { data: ordersToDelete, error: orderQueryError } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("product_id", String(productId));
+      console.log("orders ที่จะถูกลบ:", ordersToDelete, orderQueryError);
+
+      await supabase.from("orders").delete().eq("product_id", String(productId));
+
       const { error } = await supabase
         .from("products")
         .delete()
         .eq("id", productId);
       if (error) throw error;
+      // === บันทึก log ===
+      await supabase.from('logs').insert([
+        {
+          username: userData.username,
+          action: 'ลบสินค้า',
+          target_type: 'product',
+          target_name: productToDelete?.name || String(productId),
+          detail: '',
+        }
+      ]);
       // รีเฟรชรายการสินค้า
       await fetchProducts();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Delete product error:", error);
-      alert("เกิดข้อผิดพลาดในการลบสินค้า");
+      let msg = error?.message || JSON.stringify(error);
+      alert("เกิดข้อผิดพลาดในการลบสินค้า: " + msg);
     }
   };
 
@@ -268,7 +326,7 @@ export default function ProductsPage({ userData, category, onNavigateBack }: Pro
       return;
     }
     if (quantity < 1 || quantity > buyingProduct.stock) {
-      alert('จำนวนที่ซื้อไม่ถูกต้อง');
+      alert('สินค้าไม่เพียงพอ');
       return;
     }
     const total_price = buyingProduct.price * quantity;
@@ -534,10 +592,9 @@ export default function ProductsPage({ userData, category, onNavigateBack }: Pro
                   </TableCell>
                   <TableCell>
                     <Badge
-                      variant={product.status === "active" ? "default" : "secondary"}
-                      className={product.status === "active" ? "bg-black text-white" : "bg-gray-200 text-gray-700"}
+                      className={product.stock === 0 ? "border border-red-600 text-red-600 bg-transparent" : (product.status === "active" ? "bg-black text-white" : "bg-gray-200 text-gray-700")}
                     >
-                      {product.status === "active" ? "เปิดใช้งาน" : "ปิดใช้งาน"}
+                      {product.stock === 0 ? "สินค้าหมดสต็อก" : product.status === "active" ? "มีสินค้า" : "ปิดใช้งาน"}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -565,16 +622,10 @@ export default function ProductsPage({ userData, category, onNavigateBack }: Pro
                       ) : (
                         <>
                           <Button
-                            variant="outline"
-                            size="sm"
-                            className="border-gray-300 text-black hover:bg-gray-50 bg-transparent"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                          <Button
                             size="sm"
                             className="bg-green-600 text-white hover:bg-green-700 ml-2"
                             onClick={() => openBuyDialog(product)}
+                            disabled={product.stock === 0}
                           >
                             ซื้อ
                           </Button>
@@ -753,23 +804,33 @@ export default function ProductsPage({ userData, category, onNavigateBack }: Pro
                 <div className="font-medium text-black">{buyingProduct.name}</div>
                 <div className="text-gray-600">ราคา: ฿{buyingProduct.price.toLocaleString()}</div>
                 <div className="text-gray-600">คงเหลือ: {buyingProduct.stock}</div>
-                <div>
-                  <label className="text-black text-sm">จำนวนที่ต้องการซื้อ</label>
-                  <Input
-                    type="number"
-                    min={1}
-                    max={buyingProduct.stock}
-                    value={buyQuantity}
-                    onChange={e => setBuyQuantity(Number(e.target.value))}
-                    className="mt-1"
-                  />
-                </div>
-                <Button
-                  className="w-full bg-green-600 text-white hover:bg-green-700"
-                  onClick={handleBuyProduct}
-                >
-                  ยืนยันซื้อ
-                </Button>
+                {buyingProduct.stock === 0 ? (
+                  <div className="text-red-600 font-semibold">สินค้าหมดสต็อก</div>
+                ) : (
+                  <>
+                    <div>
+                      <label className="text-black text-sm">จำนวนที่ต้องการซื้อ</label>
+                      <Input
+                        type="number"
+                        min={1}
+                        max={buyingProduct.stock}
+                        value={buyQuantity}
+                        onChange={e => setBuyQuantity(Number(e.target.value))}
+                        className="mt-1"
+                      />
+                      {buyQuantity > buyingProduct.stock && (
+                        <div className="text-red-600 text-sm mt-1">สินค้าไม่เพียงพอ</div>
+                      )}
+                    </div>
+                    <Button
+                      className="w-full bg-green-600 text-white hover:bg-green-700"
+                      onClick={handleBuyProduct}
+                      disabled={buyQuantity > buyingProduct.stock || buyQuantity < 1}
+                    >
+                      ยืนยันซื้อ
+                    </Button>
+                  </>
+                )}
               </div>
             )}
           </DialogDescription>

@@ -1,6 +1,6 @@
 "use client"
 import { useState, useEffect } from "react"
-import { Plus, Edit, Trash2, Package, ArrowRight, Users, Download } from "lucide-react"
+import { Plus, Edit, Trash2, Package, ArrowRight, Users, Download, LogOut } from "lucide-react"
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts"
 
 import { Button } from "@/components/ui/button"
@@ -58,6 +58,8 @@ export default function CategoryPage({ userData, onNavigateToProducts, onNavigat
   const [totalProducts, setTotalProducts] = useState<number>(0)
   const [totalValue, setTotalValue] = useState<number>(0)
   const [loadingStats, setLoadingStats] = useState(true)
+
+  const [isLogDialogOpen, setIsLogDialogOpen] = useState(false)
 
   const EMOJI_OPTIONS = [
     "📦", // กล่อง (default)
@@ -143,6 +145,16 @@ export default function CategoryPage({ userData, onNavigateToProducts, onNavigat
       alert("เกิดข้อผิดพลาด: " + error.message);
       console.error('Supabase insert error:', error);
     } else {
+      // === บันทึก log ===
+      await supabase.from('logs').insert([
+        {
+          username: userData.username,
+          action: 'เพิ่มหมวดหมู่',
+          target_type: 'category',
+          target_name: newCategory.name,
+          detail: JSON.stringify(payload),
+        }
+      ]);
       await fetchCategories(); // ดึงข้อมูลใหม่หลัง insert
       setIsAddDialogOpen(false);
     }
@@ -160,6 +172,16 @@ export default function CategoryPage({ userData, onNavigateToProducts, onNavigat
         })
         .eq("id", editingCategory.id);
       if (!error) {
+        // === บันทึก log ===
+        await supabase.from('logs').insert([
+          {
+            username: userData.username,
+            action: 'แก้ไขหมวดหมู่',
+            target_type: 'category',
+            target_name: editingCategory.name,
+            detail: JSON.stringify(editingCategory),
+          }
+        ]);
         await fetchCategories(); // ดึงข้อมูลใหม่หลัง update
         setEditingCategory(null);
         setIsEditDialogOpen(false);
@@ -170,10 +192,25 @@ export default function CategoryPage({ userData, onNavigateToProducts, onNavigat
   }
 
   const handleDeleteCategory = async (categoryId: string) => {
+    // หา category ที่จะลบเพื่อบันทึก log
+    const { data: categoryToDelete } = await supabase
+      .from("categories")
+      .select("name")
+      .eq("id", categoryId)
+      .maybeSingle();
     await supabase.from("products").delete().eq("category_id", categoryId);
     const { error } = await supabase.from("categories").delete().eq("id", categoryId);
-
     if (!error) {
+      // === บันทึก log ===
+      await supabase.from('logs').insert([
+        {
+          username: userData.username,
+          action: 'ลบหมวดหมู่',
+          target_type: 'category',
+          target_name: categoryToDelete?.name || String(categoryId),
+          detail: '',
+        }
+      ]);
       await fetchCategories(); // ดึงข้อมูลใหม่จากฐานข้อมูล
     } else {
       alert("เกิดข้อผิดพลาด: " + error.message);
@@ -282,8 +319,9 @@ export default function CategoryPage({ userData, onNavigateToProducts, onNavigat
             className="border px-3 py-2 rounded w-64 focus:outline-none focus:ring focus:border-black"
           />
         </div>
-        {/* ปุ่มต่าง ๆ */}
-        <div className="mb-4 flex justify-between items-center">
+        {/* ปุ่มต่าง ๆ + ปุ่ม log */}
+        <div className="mb-4 flex justify-between items-center gap-2">
+          {/* ลบปุ่ม log ออก เหลือเฉพาะปุ่มอื่น ๆ */}
           {isAdmin && (
             <>
               <Button
@@ -533,6 +571,28 @@ export default function CategoryPage({ userData, onNavigateToProducts, onNavigat
               <Button onClick={handleEditCategory} className="bg-black text-white hover:bg-gray-800">
                 บันทึกการแก้ไข
               </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Dialog Log การใช้งาน */}
+      {isLogDialogOpen && (
+        <Dialog open={isLogDialogOpen} onOpenChange={setIsLogDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Log การเพิ่ม ลบ แก้ไข สินค้า, หมวดหมู่, และบัญชีผู้ใช้</DialogTitle>
+            </DialogHeader>
+            <div className="py-4 text-gray-700 text-sm">
+              <p>ตัวอย่าง log (ยังไม่ดึงข้อมูลจริง):</p>
+              <ul className="list-disc ml-6 mt-2">
+                <li>[2024-06-01 10:00] admin เพิ่มสินค้า "A"</li>
+                <li>[2024-06-01 10:05] admin ลบหมวดหมู่ "ของเล่น"</li>
+                <li>[2024-06-01 10:10] admin แก้ไขบัญชีผู้ใช้ "user1"</li>
+              </ul>
+            </div>
+            <div className="flex justify-end">
+              <Button variant="outline" onClick={() => setIsLogDialogOpen(false)}>ปิด</Button>
             </div>
           </DialogContent>
         </Dialog>

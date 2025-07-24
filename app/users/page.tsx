@@ -111,6 +111,16 @@ export default function UserPage({ userData, onNavigateBack }: UserPageProps) {
       newUser
     ])
     if (!error) {
+      // === บันทึก log ===
+      await supabase.from('logs').insert([
+        {
+          username: userData.username,
+          action: 'เพิ่มผู้ใช้',
+          target_type: 'user',
+          target_name: newUser.username,
+          detail: JSON.stringify(newUser),
+        }
+      ]);
       await fetchUsers(); // ดึงข้อมูลใหม่หลัง insert
       setNewUser({
         username: "",
@@ -128,6 +138,16 @@ export default function UserPage({ userData, onNavigateBack }: UserPageProps) {
   const handleEditUser = () => {
     if (editingUser) {
       setUsers(users.map((u) => (String(u.id) === String(editingUser.id) ? editingUser : u)))
+      // === บันทึก log ===
+      supabase.from('logs').insert([
+        {
+          username: userData.username,
+          action: 'แก้ไขผู้ใช้',
+          target_type: 'user',
+          target_name: editingUser.username,
+          detail: JSON.stringify(editingUser),
+        }
+      ]);
       setEditingUser(null)
       setIsEditDialogOpen(false)
     }
@@ -135,6 +155,17 @@ export default function UserPage({ userData, onNavigateBack }: UserPageProps) {
 
   const handleDeleteUser = (userId: string | number) => {
     setUsers(users.filter((u) => String(u.id) !== String(userId)))
+    // หา user ที่จะลบเพื่อบันทึก log
+    const userToDelete = users.find((u) => String(u.id) === String(userId));
+    supabase.from('logs').insert([
+      {
+        username: userData.username,
+        action: 'ลบผู้ใช้',
+        target_type: 'user',
+        target_name: userToDelete?.username || String(userId),
+        detail: '',
+      }
+    ]);
   }
 
   const openEditDialog = (user: {
