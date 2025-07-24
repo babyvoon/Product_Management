@@ -208,7 +208,7 @@ export default function CategoryPage({ userData, onNavigateToProducts, onNavigat
       return;
     }
     if (productCount && productCount > 0) {
-      alert("ไม่สามารถลบหมวดหมู่นี้ได้ เนื่องจากยังมีสินค้าอยู่ในหมวดหมู่นี้ กรุณาลบสินค้าทั้งหมดก่อน");
+      alert("ไม่สามารถลบหมวดหมู่นี้ได้ เนื่องจากยังมีรายการสินค้าอยู่ในหมวดหมู่นี้ กรุณาลบรายการสินค้าทั้งหมดก่อน");
       return;
     }
     const { error } = await supabase.from("categories").delete().eq("id", categoryId);

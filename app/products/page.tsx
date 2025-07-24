@@ -276,16 +276,22 @@ export default function ProductsPage({ userData, category, onNavigateBack }: Pro
         .select("name")
         .eq("id", productId)
         .maybeSingle();
+      // DEBUG: log productId, orders ทั้งหมด, และเปรียบเทียบ
+      const productIdStr = String(productId);
+      console.log("productId ที่จะลบ:", productIdStr, typeof productIdStr);
+      const { data: allOrders } = await supabase.from("orders").select("*");
+      console.log("orders ทั้งหมด:", allOrders);
+      if (allOrders && allOrders.length > 0) {
+        allOrders.forEach(order => {
+          console.log("order.product_id:", order.product_id, typeof order.product_id, "==", productIdStr, order.product_id === productIdStr);
+        });
+      }
       // ลบ orders ที่อ้างถึงสินค้านี้ก่อน
-      console.log("จะลบ order ที่ product_id =", productId);
-      const { data: ordersToDelete, error: orderQueryError } = await supabase
-        .from("orders")
-        .select("*")
-        .eq("product_id", String(productId));
-      console.log("orders ที่จะถูกลบ:", ordersToDelete, orderQueryError);
-
-      await supabase.from("orders").delete().eq("product_id", String(productId));
-
+      await supabase.from("orders").delete().eq("product_id", productIdStr);
+      // DEBUG: log orders หลังลบ
+      const { data: ordersAfter } = await supabase.from("orders").select("*").eq("product_id", productIdStr);
+      console.log("orders หลังลบ:", ordersAfter);
+      // ลบสินค้า
       const { error } = await supabase
         .from("products")
         .delete()
@@ -297,11 +303,10 @@ export default function ProductsPage({ userData, category, onNavigateBack }: Pro
           username: userData.username,
           action: 'ลบสินค้า',
           target_type: 'product',
-          target_name: productToDelete?.name || String(productId),
+          target_name: productToDelete?.name || productIdStr,
           detail: '',
         }
       ]);
-      // รีเฟรชรายการสินค้า
       await fetchProducts();
     } catch (error: any) {
       console.error("Delete product error:", error);
