@@ -51,6 +51,7 @@ export default function AuthPage() {
 
       if (data) {
         localStorage.setItem("currentUser", JSON.stringify({
+          id: data.id, // เพิ่ม id
           username: data.username,
           role: data.role,
           name: data.name,
@@ -117,6 +118,7 @@ export default function AuthPage() {
     if (newUser) {
       // save user to localStorage
       localStorage.setItem("currentUser", JSON.stringify({
+        id: newUser.id, // เพิ่ม id
         username: newUser.username,
         role: newUser.role,
         name: newUser.name,
@@ -130,20 +132,20 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center p-4">
+    <div className="min-h-screen bg-card flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-black mb-2">Product Management</h1>
           <p className="text-gray-600">ระบบจัดการสินค้า</p>
         </div>
 
-        <Card className="border-gray-200 bg-white shadow-lg">
+        <Card className="border-gray-200 bg-card shadow-lg">
           <CardHeader className="text-center border-b border-gray-200">
             <CardTitle className="text-black">เข้าสู่ระบบ / สมัครสมาชิก</CardTitle>
           </CardHeader>
           <CardContent className="p-6">
             <Tabs defaultValue="login" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6 bg-gray-100">
+              <TabsList className="grid w-full grid-cols-2 mb-6 bg-background">
                 <TabsTrigger value="login" className="data-[state=active]:bg-black data-[state=active]:text-white">
                   เข้าสู่ระบบ
                 </TabsTrigger>
@@ -287,7 +289,7 @@ export default function AuthPage() {
                       <SelectTrigger className="border-gray-300 focus:border-black focus:ring-black">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-white border-gray-300">
+                      <SelectContent className="bg-card border-gray-300">
                         <SelectItem value="user">ผู้ใช้ทั่วไป</SelectItem>
                         <SelectItem value="admin">ผู้ดูแลระบบ</SelectItem>
                       </SelectContent>

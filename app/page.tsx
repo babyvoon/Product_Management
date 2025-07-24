@@ -4,6 +4,8 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import { UserIcon, Shield, LogOut } from "lucide-react"
+import { useTheme } from "next-themes"
+import { Sun, Moon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -77,6 +79,7 @@ export default function ProductManagement() {
   const router = useRouter();
   const [userData, setUserData] = useState<any>(null);
   const [checked, setChecked] = useState(false);
+  const { theme, setTheme } = useTheme();
 
   // dashboard state
   const [currentPage, setCurrentPage] = useState<"categories" | "products" | "users">("categories");
@@ -107,8 +110,8 @@ export default function ProductManagement() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      <header className="border-b border-gray-200 bg-white">
+    <div className="min-h-screen bg-background">
+      <header className="border-b border-gray-200 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
@@ -129,7 +132,7 @@ export default function ProductManagement() {
               )}
             </div>
             <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2 px-3 py-1 bg-gray-100 rounded-lg">
+              <div className="flex items-center space-x-2 px-3 py-1 bg-background rounded-lg">
                 <span className="text-sm font-medium text-black">{userData.name}</span>
                 <span className="text-xs text-gray-500">(@{userData.username})</span>
                 <span className="border border-gray-300 text-gray-700 text-xs rounded px-2 py-0.5 ml-2">

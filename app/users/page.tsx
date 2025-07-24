@@ -215,7 +215,7 @@ export default function UserPage({ userData, onNavigateBack }: UserPageProps) {
                 เพิ่มผู้ใช้
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md bg-white border-gray-300">
+            <DialogContent className="max-w-md bg-card border-gray-300">
               <DialogHeader>
                 <DialogTitle className="text-black">เพิ่มผู้ใช้ใหม่</DialogTitle>
               </DialogHeader>
@@ -271,7 +271,7 @@ export default function UserPage({ userData, onNavigateBack }: UserPageProps) {
                     <SelectTrigger className="border-gray-300 focus:border-black focus:ring-black">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-white border-gray-300">
+                    <SelectContent className="bg-card border-gray-300">
                       <SelectItem value="user">ผู้ใช้ทั่วไป</SelectItem>
                       <SelectItem value="admin">ผู้ดูแลระบบ</SelectItem>
                     </SelectContent>
@@ -288,7 +288,7 @@ export default function UserPage({ userData, onNavigateBack }: UserPageProps) {
                     <SelectTrigger className="border-gray-300 focus:border-black focus:ring-black">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-white border-gray-300">
+                    <SelectContent className="bg-card border-gray-300">
                       <SelectItem value="active">เปิดใช้งาน</SelectItem>
                       <SelectItem value="inactive">ปิดใช้งาน</SelectItem>
                     </SelectContent>
@@ -313,7 +313,7 @@ export default function UserPage({ userData, onNavigateBack }: UserPageProps) {
       </div>
 
       {/* Users Table */}
-      <Card className="border-gray-200 bg-white">
+      <Card className="border-gray-200 bg-card">
         <CardHeader className="border-b border-gray-200">
           <CardTitle className="text-black">รายการผู้ใช้ ({filteredUsers.length} คน)</CardTitle>
         </CardHeader>
@@ -384,7 +384,7 @@ export default function UserPage({ userData, onNavigateBack }: UserPageProps) {
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </AlertDialogTrigger>
-                        <AlertDialogContent className="bg-white border-gray-300">
+                        <AlertDialogContent className="bg-card border-gray-300">
                           <AlertDialogHeader>
                             <AlertDialogTitle className="text-black">ยืนยันการลบ</AlertDialogTitle>
                             <AlertDialogDescription className="text-gray-600">
@@ -415,7 +415,7 @@ export default function UserPage({ userData, onNavigateBack }: UserPageProps) {
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-md bg-white border-gray-300">
+        <DialogContent className="max-w-md bg-card border-gray-300">
           <DialogHeader>
             <DialogTitle className="text-black">แก้ไขผู้ใช้</DialogTitle>
           </DialogHeader>
@@ -471,7 +471,7 @@ export default function UserPage({ userData, onNavigateBack }: UserPageProps) {
                   <SelectTrigger className="border-gray-300 focus:border-black focus:ring-black">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-white border-gray-300">
+                  <SelectContent className="bg-card border-gray-300">
                     <SelectItem value="user">ผู้ใช้ทั่วไป</SelectItem>
                     <SelectItem value="admin">ผู้ดูแลระบบ</SelectItem>
                   </SelectContent>
@@ -489,7 +489,7 @@ export default function UserPage({ userData, onNavigateBack }: UserPageProps) {
                   <SelectTrigger className="border-gray-300 focus:border-black focus:ring-black">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-white border-gray-300">
+                  <SelectContent className="bg-card border-gray-300">
                     <SelectItem value="active">เปิดใช้งาน</SelectItem>
                     <SelectItem value="inactive">ปิดใช้งาน</SelectItem>
                   </SelectContent>

@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { supabase } from "@/lib/supabase"
+import { useToast } from "@/components/ui/use-toast"
 
 interface Product {
   id: number
@@ -32,6 +33,7 @@ interface ProductsPageProps {
     username: string
     role: "admin" | "user"
     name: string
+    id: string // Added id to userData
   }
   category: {
     id: string
@@ -58,27 +60,32 @@ export default function ProductsPage({ userData, category, onNavigateBack }: Pro
     status: "active",
   })
 
+  const { toast } = useToast();
+  const [buyDialogOpen, setBuyDialogOpen] = useState(false);
+  const [buyingProduct, setBuyingProduct] = useState<Product | null>(null);
+  const [buyQuantity, setBuyQuantity] = useState(1);
+
   // ดึงข้อมูลจาก Supabase
-  const fetchProducts = async () => {
-    const { data, error } = await supabase
-      .from("products")
-      .select("id, name, description, price, stock, image_url, status, categories(name)")
-      .eq("category_id", category.id)
-    if (!error && data) {
-      setProducts(
-        data.map((p: any) => ({
-          id: p.id,
-          name: p.name,
-          description: p.description,
-          price: p.price,
-          category: p.categories?.name || category.name,
-          stock: p.stock,
-          image: p.image_url,
-          status: p.status,
-        }))
-      )
+    const fetchProducts = async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("id, name, description, price, stock, image_url, status, categories(name)")
+        .eq("category_id", category.id)
+      if (!error && data) {
+        setProducts(
+          data.map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            description: p.description,
+            price: p.price,
+            category: p.categories?.name || category.name,
+            stock: p.stock,
+            image: p.image_url,
+            status: p.status,
+          }))
+        )
+      }
     }
-  }
 
   useEffect(() => {
     if (!(typeof category.id === 'string' && category.id.length > 10)) return;
@@ -244,6 +251,46 @@ export default function ProductsPage({ userData, category, onNavigateBack }: Pro
     }
   };
 
+  // ฟังก์ชันเปิด dialog ซื้อ
+  const openBuyDialog = (product: Product) => {
+    setBuyingProduct(product);
+    setBuyQuantity(1);
+    setBuyDialogOpen(true);
+  };
+
+  // ฟังก์ชันซื้อสินค้า
+  const handleBuyProduct = async () => {
+    if (!buyingProduct) return;
+    const quantity = buyQuantity;
+    if (!userData || !userData.id) {
+      alert('กรุณาเข้าสู่ระบบก่อนซื้อสินค้า');
+      return;
+    }
+    if (quantity < 1 || quantity > buyingProduct.stock) {
+      alert('จำนวนที่ซื้อไม่ถูกต้อง');
+      return;
+    }
+    const total_price = buyingProduct.price * quantity;
+    // 1. insert order
+    const { error } = await supabase.from('orders').insert([
+      {
+        user_id: userData.id,
+        product_id: buyingProduct.id,
+        quantity,
+        total_price,
+      }
+    ]);
+    if (!error) {
+      // 2. update stock
+      await supabase.from('products').update({ stock: buyingProduct.stock - quantity }).eq('id', buyingProduct.id);
+      setBuyDialogOpen(false);
+      toast({ title: 'สั่งซื้อสำเร็จ', description: `คุณได้ซื้อ ${buyingProduct.name} จำนวน ${quantity} ชิ้น`, });
+      await fetchProducts(); // refresh
+    } else {
+      alert('เกิดข้อผิดพลาด: ' + error.message);
+    }
+  };
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -292,7 +339,7 @@ export default function ProductsPage({ userData, category, onNavigateBack }: Pro
                     เพิ่มสินค้า
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-md bg-white border-gray-300 max-h-[90vh] overflow-y-auto">
+                <DialogContent className="max-w-md bg-card border-gray-300 max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle className="text-black">เพิ่มสินค้าใหม่</DialogTitle>
                   </DialogHeader>
@@ -390,7 +437,7 @@ export default function ProductsPage({ userData, category, onNavigateBack }: Pro
                               onChange={(e) => handleImageUpload(e, false)}
                               className="hidden"
                             />
-                            <div className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm">
+                            <div className="px-4 py-2 bg-background text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm">
                               เลือกรูปภาพ
                             </div>
                           </label>
@@ -413,7 +460,7 @@ export default function ProductsPage({ userData, category, onNavigateBack }: Pro
                         <SelectTrigger className="border-gray-300 focus:border-black focus:ring-black">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="bg-white border-gray-300">
+                        <SelectContent className="bg-card border-gray-300">
                           <SelectItem value="active">เปิดใช้งาน</SelectItem>
                           <SelectItem value="inactive">ปิดใช้งาน</SelectItem>
                         </SelectContent>
@@ -443,7 +490,7 @@ export default function ProductsPage({ userData, category, onNavigateBack }: Pro
       </div>
 
       {/* Products Table */}
-      <Card className="border-gray-200 bg-white">
+      <Card className="border-gray-200 bg-card">
         <CardHeader className="border-b border-gray-200">
           <CardTitle className="text-black">รายการสินค้า ({filteredProducts.length} รายการ)</CardTitle>
         </CardHeader>
@@ -515,13 +562,22 @@ export default function ProductsPage({ userData, category, onNavigateBack }: Pro
                           </Button>
                         </>
                       ) : (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="border-gray-300 text-black hover:bg-gray-50 bg-transparent"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="border-gray-300 text-black hover:bg-gray-50 bg-transparent"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="bg-green-600 text-white hover:bg-green-700 ml-2"
+                            onClick={() => openBuyDialog(product)}
+                          >
+                            ซื้อ
+                          </Button>
+                        </>
                       )}
                     </div>
                   </TableCell>
@@ -535,7 +591,7 @@ export default function ProductsPage({ userData, category, onNavigateBack }: Pro
       {/* Edit Dialog */}
       {userData.role === "admin" && (
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="max-w-md bg-white border-gray-300 max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-md bg-card border-gray-300 max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-black">แก้ไขสินค้า</DialogTitle>
             </DialogHeader>
@@ -634,7 +690,7 @@ export default function ProductsPage({ userData, category, onNavigateBack }: Pro
                           onChange={(e) => handleImageUpload(e, true)}
                           className="hidden"
                         />
-                        <div className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm">
+                        <div className="px-4 py-2 bg-background text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm">
                           เปลี่ยนรูปภาพ
                         </div>
                       </label>
@@ -657,7 +713,7 @@ export default function ProductsPage({ userData, category, onNavigateBack }: Pro
                     <SelectTrigger className="border-gray-300 focus:border-black focus:ring-black">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-white border-gray-300">
+                    <SelectContent className="bg-card border-gray-300">
                       <SelectItem value="active">เปิดใช้งาน</SelectItem>
                       <SelectItem value="inactive">ปิดใช้งาน</SelectItem>
                     </SelectContent>
@@ -683,6 +739,41 @@ export default function ProductsPage({ userData, category, onNavigateBack }: Pro
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Dialog ซื้อสินค้า */}
+      <Dialog open={buyDialogOpen} onOpenChange={setBuyDialogOpen}>
+        <DialogContent className="max-w-xs bg-card border-gray-300">
+          <DialogHeader>
+            <DialogTitle className="text-black">ซื้อสินค้า</DialogTitle>
+          </DialogHeader>
+          <DialogDescription>
+            {buyingProduct && (
+              <div className="space-y-4">
+                <div className="font-medium text-black">{buyingProduct.name}</div>
+                <div className="text-gray-600">ราคา: ฿{buyingProduct.price.toLocaleString()}</div>
+                <div className="text-gray-600">คงเหลือ: {buyingProduct.stock}</div>
+                <div>
+                  <label className="text-black text-sm">จำนวนที่ต้องการซื้อ</label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={buyingProduct.stock}
+                    value={buyQuantity}
+                    onChange={e => setBuyQuantity(Number(e.target.value))}
+                    className="mt-1"
+                  />
+                </div>
+                <Button
+                  className="w-full bg-green-600 text-white hover:bg-green-700"
+                  onClick={handleBuyProduct}
+                >
+                  ยืนยันซื้อ
+                </Button>
+              </div>
+            )}
+          </DialogDescription>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
