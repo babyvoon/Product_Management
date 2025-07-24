@@ -54,7 +54,7 @@ export default function ProductsPage({ userData, category, onNavigateBack }: Pro
     name: "",
     description: "",
     price: 0,
-    category: category.name,
+    category: category?.name || "",
     stock: 0,
     image: "/placeholder.svg?height=100&width=100",
     status: "active",
@@ -67,6 +67,7 @@ export default function ProductsPage({ userData, category, onNavigateBack }: Pro
 
   // ดึงข้อมูลจาก Supabase
     const fetchProducts = async () => {
+      if (!category?.id) return;
       const { data, error } = await supabase
         .from("products")
         .select("id, name, description, price, stock, image_url, status, categories(name)")
@@ -78,7 +79,7 @@ export default function ProductsPage({ userData, category, onNavigateBack }: Pro
             name: p.name,
             description: p.description,
             price: p.price,
-            category: p.categories?.name || category.name,
+            category: p.categories?.name || category?.name || "",
             stock: p.stock,
             image: p.image_url,
             status: p.status,
@@ -88,9 +89,9 @@ export default function ProductsPage({ userData, category, onNavigateBack }: Pro
     }
 
   useEffect(() => {
-    if (!(typeof category.id === 'string' && category.id.length > 10)) return;
+    if (!category?.id || typeof category.id !== 'string' || category.id.length <= 10) return;
     fetchProducts();
-  }, [category.id, category.name])
+  }, [category?.id, category?.name])
 
   const filteredProducts = products.filter(
     (product) =>
@@ -148,7 +149,7 @@ export default function ProductsPage({ userData, category, onNavigateBack }: Pro
             stock: newProduct.stock,
             image_url: newProduct.image,
             status: newProduct.status,
-            category_id: category.id,
+            category_id: category?.id,
           },
         ])
         .select();
@@ -165,7 +166,7 @@ export default function ProductsPage({ userData, category, onNavigateBack }: Pro
         name: "",
         description: "",
         price: 0,
-        category: category.name,
+        category: category?.name || "",
         stock: 0,
         image: "/placeholder.svg?height=100&width=100",
         status: "active",
@@ -215,7 +216,7 @@ export default function ProductsPage({ userData, category, onNavigateBack }: Pro
       const { data, error } = await supabase
         .from("products")
         .select("id, name, description, price, stock, image_url, status, categories(name)")
-        .eq("category_id", category.id)
+        .eq("category_id", category?.id)
 
       if (error) throw error
 
@@ -304,8 +305,8 @@ export default function ProductsPage({ userData, category, onNavigateBack }: Pro
           กลับ
         </Button>
         <div>
-          <h2 className="text-3xl font-bold text-black">คลังสินค้า - {category.name}</h2>
-          <p className="text-gray-600 mt-2">จัดการสินค้าในหมวดหมู่ {category.name}</p>
+          <h2 className="text-3xl font-bold text-black">คลังสินค้า - {category?.name || ""}</h2>
+          <p className="text-gray-600 mt-2">จัดการสินค้าในหมวดหมู่ {category?.name || ""}</p>
         </div>
       </div>
 
