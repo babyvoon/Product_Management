@@ -4,10 +4,9 @@ import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from "@/components/theme-provider"
 
 export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
-  generator: 'v0.dev',
-}
+  title: "Product Management",
+  description: "ระบบจัดการสินค้า",
+};
 
 export default function RootLayout({
   children,
