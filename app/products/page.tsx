@@ -323,7 +323,7 @@ export default function ProductsPage({ userData, category, onNavigateBack }: Pro
         </div>
 
         <div className="flex gap-2">
-          {userData.role === "admin" && (
+          {userData?.role === "admin" && (
             <>
               <Button
                 variant="outline"
@@ -542,7 +542,7 @@ export default function ProductsPage({ userData, category, onNavigateBack }: Pro
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
-                      {userData.role === "admin" ? (
+                      {userData?.role === "admin" ? (
                         <>
                           <Button
                             variant="outline"
@@ -590,7 +590,7 @@ export default function ProductsPage({ userData, category, onNavigateBack }: Pro
       </Card>
 
       {/* Edit Dialog */}
-      {userData.role === "admin" && (
+      {userData?.role === "admin" && (
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
           <DialogContent className="max-w-md bg-card border-gray-300 max-h-[90vh] overflow-y-auto">
             <DialogHeader>
